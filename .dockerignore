@@ -1,0 +1,10 @@
+**/node_modules
+**/dist
+**/.env
+**/.git
+**/npm-debug.log
+backend/uploads
+backend/data
+.dockerignore
+Dockerfile
+docker-compose.yml

@@ -1,0 +1,14 @@
+{
+  "name": "tickette",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Tickette - Full-stack IT Help Desk Ticketing System (React + Vite + Express + SQLite)",
+  "scripts": {
+    "dev": "concurrently -n API,WEB -c blue,magenta \"npm:dev --prefix backend\" \"npm:dev --prefix frontend\"",
+    "seed": "npm run seed --prefix backend",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
