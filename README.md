@@ -3,15 +3,15 @@
 A full-stack, real-time-feel ticketing web application: users raise tickets, the IT desk
 resolves them (with photo proof), and admins run the whole show. Inspired by the concept
 of [hazzillrodriguez/Tickette](https://github.com/hazzillrodriguez/Tickette), rebuilt from
-the ground up as a **React (Vite) + Express + SQL (SQLite)** stack with a much richer
+the ground up as a **React (Vite) + Express + SQL (PostgreSQL)** stack with a much richer
 workflow and a modern, colorful UI.
 
 ```
 tickette/
-├── backend/                  Express API + SQLite database
+├── backend/                  Express API + PostgreSQL database
 │   ├── src/
 │   │   ├── db/
-│   │   │   ├── connection.js  SQL schema + connection (better-sqlite3)
+│   │   │   ├── connection.js  PostgreSQL connection (pg)
 │   │   │   └── seed.js        Demo users, ticket types & tickets
 │   │   ├── middleware/
 │   │   │   ├── auth.js        JWT auth + role guard
@@ -73,18 +73,20 @@ audit trail of who changed what, when, and why.
 |-----------|------------------------------------------------------|
 | Frontend  | React 18, Vite, React Router, Tailwind CSS, Recharts, Lucide icons |
 | Backend   | Node.js, Express                                     |
-| Database  | SQLite via `better-sqlite3` (a real `.db` SQL file, zero setup) |
+| Database  | PostgreSQL via `pg`                                   |
 | Auth      | JSON Web Tokens + bcrypt                             |
 | Uploads   | Multer (image proof-of-resolution attachments)       |
 
-> The database is SQLite so there is **nothing to install or configure** — no Postgres/MySQL
-> server needed. The schema (`backend/src/db/connection.js`) is plain SQL and can be pointed
-> at Postgres/MySQL later with minimal changes if you outgrow SQLite.
+> The database is PostgreSQL, so you'll need a running PostgreSQL server (local install,
+> Docker container, or a hosted instance) and a connection string configured in
+> `backend/.env`. The schema (`backend/src/db/connection.js`) is plain SQL.
 
 ## 🚀 Getting started
 
 ### 1. Requirements
 - Node.js 18+ and npm
+- PostgreSQL 14+ (running locally, in Docker, or hosted — e.g. Postgres.app, `apt install
+  postgresql`, or a managed service like Supabase/RDS/Neon)
 - (No Python/virtualenv needed — this stack is Node end-to-end. If your workflow expects a
   "virtual env", the Node equivalent is simply each app's own `node_modules/`, which is what
   `npm install` creates — there's no extra activation step.)
@@ -98,7 +100,7 @@ cd tickette
 # install backend dependencies
 cd backend
 npm install
-cp .env.example .env   # already copied for you, but edit if needed
+cp .env.example .env   # edit with your PostgreSQL connection details
 
 # install frontend dependencies
 cd ../frontend
@@ -110,9 +112,17 @@ Or, from the project root, install both at once:
 npm run install:all
 ```
 
-### 3. Seed the database
+### 3. Create the database and seed it
 
-This creates `backend/data/tickette.db` with demo users, ticket types, and sample tickets.
+Create an empty PostgreSQL database (name of your choosing, e.g. `tickette`), then point
+`DATABASE_URL` in `backend/.env` at it, for example:
+
+```
+DATABASE_URL=postgresql://username:password@localhost:5432/tickette
+```
+
+Then run the seed script, which creates the schema and loads demo users, ticket types, and
+sample tickets:
 
 ```bash
 cd backend
@@ -166,8 +176,8 @@ ticket_comments(id, ticket_id, user_id, comment, attachment_path, is_resolution_
 ticket_status_history(id, ticket_id, from_status, to_status, changed_by, note, changed_at)
 ```
 
-To reseed from scratch, stop the server and delete `backend/data/tickette.db` (and the
-`-wal`/`-shm` files next to it), then run `npm run seed` again.
+To reseed from scratch, stop the server, drop and recreate the PostgreSQL database (or
+`TRUNCATE` all tables), then run `npm run seed` again.
 
 ## 🔌 API overview
 
@@ -208,11 +218,13 @@ npm run build      # outputs static assets to frontend/dist
 ```
 Serve `frontend/dist` with any static host, and run `backend` as a normal Node service
 (e.g. `npm start`, behind a process manager like pm2). Set `CLIENT_ORIGIN` in
-`backend/.env` to your deployed frontend URL, and update `frontend`'s API base URL /
-reverse-proxy config to point `/api` and `/uploads` at the backend.
+`backend/.env` to your deployed frontend URL, point `DATABASE_URL` at your production
+PostgreSQL instance, and update `frontend`'s API base URL / reverse-proxy config to point
+`/api` and `/uploads` at the backend.
 
 ## 🔒 Security notes (for a real deployment)
 
 This is a proof-of-concept. Before shipping to real users: rotate `JWT_SECRET` to a long
-random value, put the app behind HTTPS, add rate limiting on `/api/auth/login`, and move
-uploaded files to object storage (S3, etc.) instead of local disk.
+random value, put the app behind HTTPS, add rate limiting on `/api/auth/login`, secure your
+PostgreSQL instance (strong credentials, restricted network access, SSL connections), and
+move uploaded files to object storage (S3, etc.) instead of local disk.
