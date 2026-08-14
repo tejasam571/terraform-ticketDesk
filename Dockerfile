@@ -20,18 +20,7 @@ RUN npm ci --omit=dev
 # ---- Stage 3: final runtime image (node + postgres + nginx + supervisord) ----
 FROM node:20-alpine AS final
 
-RUN apk add --no-cache \
-      postgresql16 postgresql16-contrib \
-      nginx \
-      supervisor \
-      su-exec \
-      bash \
-    || apk add --no-cache \
-      postgresql15 postgresql15-contrib \
-      nginx \
-      supervisor \
-      su-exec \
-      bash
+RUN apk add --no-cache nginx supervisor su-exec bash
 
 # --- Backend ---
 WORKDIR /app/backend
@@ -55,17 +44,10 @@ ENV PORT=5000 \
     JWT_SECRET=change_this_to_a_long_random_secret_in_production \
     JWT_EXPIRES_IN=7d \
     CLIENT_ORIGIN=http://localhost \
-    DB_HOST=localhost \
+    DB_HOST=tkt-tam-db.c180gc6u6bob.ap-south-1.rds.amazonaws.com \ 
     DB_PORT=5432 \
     DB_USER=argo_admin \
     DB_PASSWORD=change_this_password \
     DB_NAME=argosuite \
     DB_SSL=false \
     PGDATA=/var/lib/postgresql/data
-
-# Persist database data across container restarts if the volume is mounted
-VOLUME ["/var/lib/postgresql/data"]
-
-EXPOSE 80
-
-ENTRYPOINT ["/entrypoint.sh"]
