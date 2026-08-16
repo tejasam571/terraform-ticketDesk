@@ -1,5 +1,5 @@
 # ============================================================
-# Argo Suite — single-image build (frontend + backend + database)
+# Argo Suite — single-image build (frontend + backend, external RDS for db)
 # ============================================================
 
 # ---- Stage 1: build the frontend static assets ----
@@ -17,7 +17,7 @@ WORKDIR /src/backend
 COPY backend/package*.json ./
 RUN npm ci --omit=dev
 
-# ---- Stage 3: final runtime image (node + postgres + nginx + supervisord) ----
+# ---- Stage 3: final runtime image (node + nginx + supervisord) ----
 FROM node:20-alpine AS final
 
 RUN apk add --no-cache nginx supervisor su-exec bash
@@ -36,18 +36,27 @@ COPY --from=frontend-build /src/frontend/dist /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 COPY docker/supervisord.conf /etc/supervisor/supervisord.conf
 COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Windows editors/git often save this with CRLF line endings, which breaks the
+# shebang (#!/bin/sh\r is not a valid interpreter path) and causes
+# "exec /entrypoint.sh: no such file or directory" even though the file exists.
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 # --- App defaults (override any of these with `docker run -e ...`) ---
+# NOTE: these DB_* vars are translated into DATABASE_URL/PGSSLMODE by entrypoint.sh
+# before the app starts, since the Node backend (src/db/connection.js) reads
+# DATABASE_URL / PG* vars, not DB_*.
 ENV PORT=5000 \
     NODE_ENV=production \
     JWT_SECRET=change_this_to_a_long_random_secret_in_production \
     JWT_EXPIRES_IN=7d \
     CLIENT_ORIGIN=http://localhost \
-    DB_HOST=tkt-tam-db.c180gc6u6bob.ap-south-1.rds.amazonaws.com \ 
+    DB_HOST=tkt-tam-db.c180gc6u6bob.ap-south-1.rds.amazonaws.com \
     DB_PORT=5432 \
     DB_USER=argo_admin \
     DB_PASSWORD=change_this_password \
     DB_NAME=argosuite \
-    DB_SSL=false \
-    PGDATA=/var/lib/postgresql/data
+    DB_SSL=false
+
+EXPOSE 80
+
+ENTRYPOINT ["/entrypoint.sh"]
