@@ -47,14 +47,12 @@ RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 # DATABASE_URL / PG* vars, not DB_*.
 ENV PORT=5000 \
     NODE_ENV=production \
-    JWT_SECRET=change_this_to_a_long_random_secret_in_production \
     JWT_EXPIRES_IN=7d \
     CLIENT_ORIGIN=http://localhost \
-    DB_HOST=tkt-tam-db.c180gc6u6bob.ap-south-1.rds.amazonaws.com \
+    DB_HOST=tickette-dev-db.c180gc6u6bob.ap-south-1.rds.amazonaws.com \
     DB_PORT=5432 \
-    DB_USER=argo_admin \
-    DB_PASSWORD=change_this_password \
-    DB_NAME=argosuite \
+    DB_USER=tickette_admin \
+    DB_NAME=tickette \
     DB_SSL=false
 
 EXPOSE 80
